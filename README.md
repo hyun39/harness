@@ -65,20 +65,66 @@ PHASE 5  데이터 소스 교체 (Stub → Real)
 
 ### 새 프로젝트 시작 시
 
+**Step 1 — 프로젝트 생성 & harness 연결**
+
 ```bash
-# 1. 새 프로젝트 생성 후 harness를 submodule로 추가
+mkdir {your-project} && cd {your-project}
+git init
+
+# harness를 specs/_methodology/에 submodule로 추가
 git submodule add https://github.com/hyun39/harness specs/_methodology
+```
 
-# 2. product 문서 작성 (specs/_methodology/guides/02_PROMPT_GUIDE.md PHASE 1 참조)
-# specs/product/00_vision.md → 01_domain.md → 02_epics.md
+**Step 2 — 기본 디렉토리 구조 생성**
 
-# 3. 첫 Feature BDD 사이클 시작 (specs/_methodology/guides/03_EXECUTION_GUIDE.md 참조)
-cp specs/_methodology/bdd/templates/business_spec.md specs/features/{domain}/{feature}_spec.md
-cp specs/_methodology/bdd/templates/feature.feature  specs/features/{domain}/{feature}.feature
+```bash
+mkdir -p specs/product \
+         specs/features \
+         apps \
+         infra \
+         docs \
+         scripts
+```
+
+**Step 3 — PHASE 1: 제품 스펙 작성 (AI 프롬프트 사용)**
+
+```bash
+# 02_PROMPT_GUIDE.md의 STEP 1~3 프롬프트를 AI에 붙여넣어 작성
+# specs/product/00_vision.md  → STEP 1
+# specs/product/01_domain.md  → STEP 2
+# specs/product/02_epics.md   → STEP 3
+open specs/_methodology/guides/02_PROMPT_GUIDE.md   # 또는 편집기로 열기
+```
+
+**Step 4 — 첫 Feature BDD 사이클 시작**
+
+```bash
+# 비즈니스 스펙·.feature 템플릿 복사
+cp specs/_methodology/bdd/templates/business_spec.md \
+   specs/features/{domain}/{feature}_spec.md
+cp specs/_methodology/bdd/templates/feature.feature \
+   specs/features/{domain}/{feature}.feature
+```
+
+**Step 5 — 환경 설정 (첫 BDD Green까지)**
+
+```bash
+# 03_EXECUTION_GUIDE.md 순서대로 진행
+open specs/_methodology/guides/03_EXECUTION_GUIDE.md
 ```
 
 > **submodule 사용 이유**: PROMPT_GUIDE의 모든 프롬프트가 `specs/_methodology/` 경로를 참조하므로,
 > 이 위치에 submodule을 추가하면 경로 수정 없이 그대로 사용할 수 있다.
+
+---
+
+### 기존 프로젝트에서 clone 후 submodule 초기화
+
+```bash
+git clone {your-project-repo}
+cd {your-project}
+git submodule update --init --recursive
+```
 
 ### 파일 선택 기준
 
