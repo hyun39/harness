@@ -126,6 +126,47 @@ cd {your-project}
 git submodule update --init --recursive
 ```
 
+### Claude Code로 실행하기
+
+harness의 STEP은 **Claude Code CLI** 를 프로젝트 루트에서 실행해 사용한다.  
+Claude Code는 `specs/_methodology/` 파일을 직접 읽을 수 있어 경로 참조가 그대로 작동한다.
+
+**1. 프로젝트 루트에서 Claude Code 시작**
+
+```bash
+cd {your-project}
+claude          # Claude Code CLI 실행
+```
+
+**2. STEP 프롬프트 붙여넣기**
+
+`specs/_methodology/guides/02_PROMPT_GUIDE.md` 에서 해당 STEP 프롬프트를 복사해
+`{placeholder}` 부분만 채워 Claude에 전달한다.
+
+```
+# 예시 — STEP 1 (vision 작성)
+다음 제품 개요를 바탕으로 specs/_methodology/product/README.md 가이드에 따라
+specs/product/00_vision.md를 작성해줘.
+
+[제품 개요]
+제품명: {your-product}
+도메인: {domain}
+핵심 문제: {problem}
+주요 사용자: {users}
+```
+
+Claude Code가 `specs/_methodology/` 내 가이드 파일을 직접 읽어 산출물을 생성하고 저장한다.
+
+**3. 다음 STEP으로 이동**
+
+산출물을 확인한 뒤 PROMPT_GUIDE의 다음 STEP 프롬프트를 이어서 전달한다.  
+각 STEP의 입력·출력·체크포인트는 `guides/01_DEVELOPMENT_FLOW.md` 추적성 표를 참조한다.
+
+> **주의**: `claude`는 반드시 `specs/`, `apps/` 가 있는 **프로젝트 루트**에서 실행해야  
+> `specs/_methodology/` 경로 참조가 정상 작동한다.
+
+---
+
 ### 파일 선택 기준
 
 ```
