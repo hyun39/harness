@@ -66,16 +66,19 @@ PHASE 5  데이터 소스 교체 (Stub → Real)
 ### 새 프로젝트 시작 시
 
 ```bash
-# 1. harness 복사
-cp -r harness/ your-project/specs/_methodology
+# 1. 새 프로젝트 생성 후 harness를 submodule로 추가
+git submodule add https://github.com/hyun39/harness specs/_methodology
 
-# 2. product 문서 작성 (guides/02_PROMPT_GUIDE.md PHASE 1 참조)
+# 2. product 문서 작성 (specs/_methodology/guides/02_PROMPT_GUIDE.md PHASE 1 참조)
 # specs/product/00_vision.md → 01_domain.md → 02_epics.md
 
-# 3. 첫 Feature BDD 사이클 시작 (guides/03_EXECUTION_GUIDE.md 참조)
-cp bdd/templates/business_spec.md specs/features/{domain}/{feature}_spec.md
-cp bdd/templates/feature.feature  specs/features/{domain}/{feature}.feature
+# 3. 첫 Feature BDD 사이클 시작 (specs/_methodology/guides/03_EXECUTION_GUIDE.md 참조)
+cp specs/_methodology/bdd/templates/business_spec.md specs/features/{domain}/{feature}_spec.md
+cp specs/_methodology/bdd/templates/feature.feature  specs/features/{domain}/{feature}.feature
 ```
+
+> **submodule 사용 이유**: PROMPT_GUIDE의 모든 프롬프트가 `specs/_methodology/` 경로를 참조하므로,
+> 이 위치에 submodule을 추가하면 경로 수정 없이 그대로 사용할 수 있다.
 
 ### 파일 선택 기준
 
