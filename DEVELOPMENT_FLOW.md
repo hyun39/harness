@@ -1,4 +1,4 @@
-# SP500 Platform — 개발 전체 흐름 가이드
+# harness — 개발 전체 흐름 가이드
 
 > **목적**: 기능 하나가 vision에서 출발해 살아있는 문서 + 실제 인프라까지 도달하는
 > 전 과정을 사람이 할 일 / 자동 실행으로 구분해 한눈에 파악할 수 있게 정리한 참조 문서.
@@ -163,12 +163,11 @@
   │  - _store dict → PostgreSQL/DW/Mart        │
   │           ▼                                │
   │  STEP 14  외부 API 어댑터 구현              │  🤖 AI 초안 → 👤 검증
-  │  - mock_records → yfinance 등              │
+  │  - mock_records → 실제 외부 API            │
   │           ▼                                │
   │  STEP 15  인프라 runtime 구축               │  🤖 AI 초안 → 👤 검증
-  │  - infra/compose/*.yml (6개 서비스)         │
-  │    Postgres / Keycloak / OpenSearch /       │
-  │    OSD / OTel Collector / Airflow           │
+  │  - infra/compose/*.yml (프로젝트 서비스 구성)│
+  │    DB / 인증 / 관측 / 스케줄러 등            │
   │  - infra/helm/ + infra/k8s/ (운영)         │
   │           ▼                                │
   │  STEP 16  E2E 통합 테스트                   │  🤖 AI 초안 → 👤 검증
@@ -197,7 +196,7 @@
 | 2 | LOOP 1 | 4 | 비즈니스 스펙 | 🤖 AI → 👤 검증 | `*_spec.md` | `specs/features/{domain}/` |
 | 2 | LOOP 1 | 5 | .feature 작성 | 🤖 AI → 👤 검증 | `*.feature` | `specs/features/{domain}/` |
 | 2 | LOOP 1 | 6 | Red 확인 | 🤖 pytest | 실패 리포트 | 로컬/CI |
-| 2 | LOOP 1 | 6a | Stub 코드 (인메모리, 가벼운 pass-through + DR 로직) | 🤖 AI → 👤 DR 확인 | `pipeline/*.py`, `core/dependencies.py` | `apps/api/app/` |
+| 2 | LOOP 1 | 6a | Stub 코드 (인메모리, 가벼운 pass-through + DR 로직) | 🤖 AI → 👤 DR 확인 | `{domain}/*.py`, `core/dependencies.py` | `apps/{service}/app/` |
 | 2 | MILESTONE | 6b | UI/UX Mockup | 🤖 AI → 👤 인수기준 확정 | `mockup.html` | `apps/frontend/src/` |
 | 2 | LOOP 2 | 7a | **실제 production 코드 뼈대** (Walking Skeleton) | 🤖 AI → 👤 검증 | `apps/airflow/dags/*.py`, `apps/api/app/routers/*.py`, `apps/frontend/src/components/*` | 영역별 |
 | 2 | LOOP 2 | 7b | test step skeleton 자동 생성 + 7a 호출로 연결 | 🤖 `--generate-missing` + AI → 👤 검증 | `*_steps.py`, `test_*.py` | `*/tests/bdd/steps/` |
@@ -209,8 +208,8 @@
 | 3 | — | 11 | Living Docs 설정 | 🤖 gen_living_docs.py | `LIVING_DOCS.md` | `docs/` |
 | 4 | — | 12 | 스펙 일관성 검증 | 🤖 AI → 👤 검증 | 검증 리포트 | (주기적) |
 | 5 | — | 13 | DB 어댑터 (`_store` → PostgreSQL) | 🤖 AI → 👤 검증 | `repositories/`, `db/` | `apps/api/app/` |
-| 5 | — | 14 | 외부 API 어댑터 (`mock_records` → yfinance) | 🤖 AI → 👤 검증 | `adapters/*.py` | `apps/api/app/` |
-| 5 | — | 15 | 인프라 runtime (6개 서비스) | 🤖 AI → 👤 검증 | `infra/compose/*.yml`(6), `apps/airflow/Dockerfile`, `infra/helm/`, `infra/k8s/` | `infra/` |
+| 5 | — | 14 | 외부 API 어댑터 (`mock_records` → 실제 API) | 🤖 AI → 👤 검증 | `adapters/*.py` | `apps/{service}/app/` |
+| 5 | — | 15 | 인프라 runtime 구축 | 🤖 AI → 👤 검증 | `infra/compose/*.yml`, `infra/helm/`, `infra/k8s/` | `infra/` |
 | 5 | — | 16 | E2E 통합 테스트 (testcontainers) | 🤖 AI → 👤 검증 | `tests/e2e/conftest.py`, `test_pipeline_e2e.py`, `.github/workflows/e2e.yml` | `apps/api/tests/e2e/`, `.github/` |
 
 ---
@@ -261,13 +260,15 @@
 
 ### 🛠️ 인프라 설정 (Infra Config) — 🤖 AI 초안 → 👤 검증
 
-| 출력물 | 파일 | 갱신 시점 | STEP |
-|--------|------|----------|------|
-| Postgres 서비스 | `infra/compose/postgres.yml` | DB 버전·포트 변경 시 | 15 |
-| Keycloak 서비스 | `infra/compose/keycloak.yml`, `infra/keycloak/realm-export.json` | 인증 정책 변경 시 | 15 |
-| OpenSearch 서비스 | `infra/compose/opensearch.yml`, `infra/compose/opensearch-dashboards.yml` | 인덱스 구조 변경 시 | 15 |
-| OTel Collector 서비스 | `infra/compose/otel-collector.yml`, `infra/observability/otel-collector-config.yaml` | 파이프라인 변경 시 | 15 |
-| Airflow 서비스 | `infra/compose/airflow.yml`, `apps/airflow/Dockerfile` | DAG 이미지·의존성 변경 시 | 15 |
+> 구체적인 서비스 구성은 프로젝트 기술 스택에 따라 결정된다.  
+> 아래는 일반적인 패턴이며, 적용 예시는 [harness-sample-sp500](https://github.com/hyun39/harness-sample-sp500)을 참조.
+
+| 출력물 | 파일 패턴 | 갱신 시점 | STEP |
+|--------|----------|----------|------|
+| DB 서비스 | `infra/compose/{db}.yml` | DB 버전·포트 변경 시 | 15 |
+| 인증 서비스 | `infra/compose/{auth}.yml`, `infra/{auth}/` | 인증 정책 변경 시 | 15 |
+| 로그·관측 서비스 | `infra/compose/{observability}.yml` | 파이프라인 변경 시 | 15 |
+| 파이프라인 스케줄러 | `infra/compose/{scheduler}.yml`, `apps/{scheduler}/Dockerfile` | 이미지·의존성 변경 시 | 15 |
 | Helm values | `infra/helm/*.yaml` | 운영 배포 시 | 15 |
 | K8s kustomize | `infra/k8s/` (base + overlays) | 운영 배포 시 | 15 |
 
@@ -356,95 +357,76 @@ E2E Living Docs ← 실제 인프라 환경 BDD Green
   - PHASE 5 stub data → 실제 데이터 소스 교체 시 인터페이스 경계 유지 여부  (13~16)
   - 외부 API 자격 증명·rate-limit·실패 처리 정책  (14)
   - distroless 컨테이너 healthcheck 문법 (curl/wget 없음 — /proc/net/tcp6 grep 등 우회 필요)  (15)
-  - alembic version_table 충돌 (Airflow와 DB 공유 시 sp500_alembic_version 분리 필수)  (13, 15)
-  - testcontainers 데이터 격리 (ephemeral DB — 운영 sp500-postgres에 데이터가 남지 않음)  (16)
+  - alembic version_table 충돌 (스케줄러와 DB 공유 시 앱 전용 version_table 분리 필수)  (13, 15)
+  - testcontainers 데이터 격리 (ephemeral DB — 운영 DB에 데이터가 남지 않음)  (16)
 ```
 
 ---
 
 ## 6. 파일 위치 한눈에 보기
 
+> 아래는 권장 프로젝트 구조다. 기술 스택(API 프레임워크, 스케줄러 등)에 따라 `apps/` 하위는 달라진다.  
+> 적용 예시: [harness-sample-sp500](https://github.com/hyun39/harness-sample-sp500)
+
 ```
-sp500-platform/
-│
-├── doc-manure/                    📄 개발 가이드
-│   ├── DEVELOPMENT_FLOW.md        본 문서 — 전체 흐름
-│   ├── PROMPT_GUIDE.md            STEP별 표준 프롬프트
-│   └── INFRA_VALIDATION.md        🛠️ STEP 15 — 인프라 서비스 검증 체크리스트
+{your-project}/
 │
 ├── specs/
-│   ├── _methodology/              📄 방법론 가이드 (gov/bdd/std/product)
 │   ├── product/
 │   │   ├── 00_vision.md           📄 STEP 1
 │   │   ├── 01_domain.md           📄 STEP 2
 │   │   └── 02_epics.md            📄 STEP 3
 │   │
-│   └── features/                  📄 STEP 4 — Feature별 비즈니스 스펙
-│       ├── analysis/*_spec.md
-│       ├── auth/*_spec.md
-│       ├── ops/*_spec.md
-│       ├── pipeline/*_spec.md
-│       └── ui/*_spec.md
+│   └── features/                  📄 STEP 4~5 — Feature별 비즈니스 스펙 + Gherkin
+│       └── {domain}/
+│           ├── {feature}_spec.md
+│           └── {feature}.feature
 │
-├── docs/                          📄 트래킹·아키텍처·Living Docs
-│   ├── PROGRESS_MATRIX.md         📄 Epic/Feature × STEP 진행 추적
-│   ├── ARCHITECTURE.md            📄 아키텍처 정의서 (변경 시 현행화)
-│   ├── epic_feature_sequence_diagrams.md  📄 시퀀스 다이어그램
-│   ├── adr/                       📄 Architecture Decision Records
+├── docs/                          📄 아키텍처·ADR·Living Docs
+│   ├── adr/                       📄 Architecture Decision Records (gov/02 기준)
 │   └── LIVING_DOCS.md             🤖 STEP 11 — CI 자동 생성
 │
-├── apps/api/
-│   ├── app/
-│   │   ├── pipeline/              💻 STEP 6a — stub 데이터 어댑터 (DR 포함)
-│   │   ├── core/dependencies.py   💻 STEP 6a — 인메모리 _store, JWT
-│   │   ├── main.py                💻 STEP 7a — Walking Skeleton (FastAPI app)
-│   │   ├── routers/               💻 STEP 7a — Walking Skeleton (API 엔드포인트)
-│   │   ├── schemas/               💻 STEP 7a — Pydantic 응답 스키마
-│   │   ├── repositories/          💻 STEP 13 — DB 어댑터 (PHASE 5)
-│   │   ├── db/                    💻 STEP 13 — SQLAlchemy 세션·모델
-│   │   └── adapters/              💻 STEP 14 — 외부 API (PHASE 5)
+├── apps/
+│   ├── api/                       (FastAPI / Spring Boot 등)
+│   │   ├── app/
+│   │   │   ├── {domain}/          💻 STEP 6a — stub 데이터 어댑터 (DR 포함)
+│   │   │   ├── core/              💻 STEP 6a — 인메모리 _store, 인증 stub
+│   │   │   ├── main.py            💻 STEP 7a — Walking Skeleton (앱 진입점)
+│   │   │   ├── routers/           💻 STEP 7a — Walking Skeleton (엔드포인트)
+│   │   │   ├── schemas/           💻 STEP 7a — 응답 스키마
+│   │   │   ├── repositories/      💻 STEP 13 — DB 어댑터 (PHASE 5)
+│   │   │   ├── db/                💻 STEP 13 — ORM 세션·모델 (PHASE 5)
+│   │   │   └── adapters/          💻 STEP 14 — 외부 API 어댑터 (PHASE 5)
+│   │   └── tests/
+│   │       ├── bdd/steps/         🧪 STEP 7b~7c
+│   │       └── e2e/               🧪 STEP 16 (PHASE 5)
 │   │
-│   └── tests/
-│       ├── bdd/
-│       │   ├── features/          ⚙️  STEP 5 — Gherkin
-│       │   └── steps/             🧪 STEP 7b~7c
-│       └── e2e/                   🧪 STEP 16 — testcontainers (PHASE 5)
-│
-├── apps/airflow/
-│   ├── dags/                      💻 STEP 7a — Walking Skeleton (real DAG)
-│   └── tests/bdd/
-│       ├── features/              ⚙️  STEP 5
-│       └── steps/                 🧪 STEP 7b~7c
-│
-├── apps/frontend/
-│   ├── src/
-│   │   ├── mockup.html            📄 STEP 6b — 요구사항 검증 목업
-│   │   ├── App.*                  💻 STEP 7a — Walking Skeleton (real component)
-│   │   ├── components/            💻 STEP 7a — Tab/Card 등 실제 컴포넌트
-│   │   └── apps/api/                   💻 STEP 7a — FastAPI 클라이언트
-│   └── tests/bdd/
-│       ├── features/              ⚙️  STEP 5
-│       └── steps/                 🧪 STEP 7b~7c (explicit 함수)
+│   ├── {scheduler}/               (Airflow / Celery / cron 등, 선택)
+│   │   ├── dags/                  💻 STEP 7a — Walking Skeleton (파이프라인)
+│   │   └── tests/bdd/steps/       🧪 STEP 7b~7c
+│   │
+│   ├── frontend/                  (React / Vue 등, 선택)
+│   │   ├── src/
+│   │   │   ├── mockup.html        📄 STEP 6b — 요구사항 검증 목업
+│   │   │   ├── App.*              💻 STEP 7a — Walking Skeleton
+│   │   │   └── components/        💻 STEP 7a — 실제 컴포넌트
+│   │   └── tests/
+│   │       ├── bdd/steps/         🧪 STEP 7b~7c
+│   │       └── e2e/               🧪 STEP 8b (Playwright, MILESTONE 2)
+│   │
+│   └── {agent}/                   (LLM Agent, 선택)
 │
 ├── scripts/
 │   └── gen_living_docs.py         🤖 STEP 11
 │
-├── infra/                         🛠️ third-party 인프라 정의 (PHASE 5 STEP 15)
-│   ├── compose/                   🛠️ Docker Compose 서비스 파편 (6개 ✅)
-│   │   ├── postgres.yml
-│   │   ├── keycloak.yml
-│   │   ├── opensearch.yml
-│   │   ├── opensearch-dashboards.yml
-│   │   ├── otel-collector.yml
-│   │   └── airflow.yml
-│   ├── keycloak/                  🛠️ realm-export.json
-│   ├── airflow/                   🛠️ webserver_config.py
-│   ├── observability/             🛠️ OTel config + OSD 대시보드
+├── infra/                         🛠️ PHASE 5 STEP 15 — 인프라 런타임
+│   ├── compose/                   🛠️ Docker Compose 서비스 정의
+│   │   └── {service}.yml          (DB, 인증, 관측, 스케줄러 등 프로젝트별)
 │   ├── helm/                      🛠️ K8s upstream chart values (운영)
-│   └── k8s/                       🛠️ apps/ kustomize base + overlays (운영)
+│   └── k8s/                       🛠️ kustomize base + overlays (운영)
 │
 ├── docker-compose.yml             🛠️ 루트 entry point (`include: infra/compose/*.yml`)
-├── docker-compose.e2e.yml         🛠️ MILESTONE 2 STEP 8b — Mock-data E2E (Playwright)
+├── docker-compose.e2e.yml         🛠️ MILESTONE 2 STEP 8b — Mock-data E2E
 └── .github/workflows/
     ├── ci.yml                     🤖 STEP 10
     └── e2e.yml                    🤖 STEP 16 (PHASE 5)
