@@ -1,4 +1,4 @@
-# SP500 Platform Audit Checklist — 통합 인덱스
+# harness Audit Checklist — 통합 인덱스
 
 > 이 문서는 `gov/`(거버넌스)·`std/`(표준)에 분산된 모든 audit 항목을 한 곳에서 보고
 > 외부 application을 점수화·진척도 추적하기 위한 단일 인덱스다.

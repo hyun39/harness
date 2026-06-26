@@ -7,7 +7,7 @@
 
 ## 작성 순서
 
-> 상세 단계와 표준 프롬프트는 `doc-manure/PROMPT_GUIDE.md` 참조.
+> 상세 단계와 표준 프롬프트는 `guides/02_PROMPT_GUIDE.md` 참조.
 
 ```
 [PHASE 1 — 제품 전략 (1회)]
